@@ -19,6 +19,17 @@ ADD http://downloads.sourceforge.net/project/nagios/nagios-3.x/nagios-3.5.1/nagi
 RUN cd /tmp && tar -zxvf nagios.tar.gz && cd nagios  && ./configure --prefix=${NAGIOS_HOME} --exec-prefix=${NAGIOS_HOME} --enable-event-broker --with-nagios-command-user=${NAGIOS_CMDUSER} --with-command-group=${NAGIOS_CMDGROUP} --with-nagios-user=${NAGIOS_USER} --with-nagios-group=${NAGIOS_GROUP} && make all && make install && make install-config && make install-commandmode && cp sample-config/httpd.conf /etc/apache2/conf.d/nagios.conf
 ADD http://www.nagios-plugins.org/download/nagios-plugins-1.5.tar.gz /tmp/
 RUN cd /tmp && tar -zxvf nagios-plugins-1.5.tar.gz && cd nagios-plugins-1.5 && ./configure --prefix=${NAGIOS_HOME} && make && make install
+ADD https://pypi.python.org/packages/source/r/requests/requests-2.7.0.tar.gz#md5=29b173fd5fa572ec0764d1fd7b527260 /tmp/requests-2.7.0.tar.gz
+RUN cd /tmp && tar -zxvf requests-2.7.0.tar.gz && cd requests-2.7.0 && python setup.py install
+RUN apt-get install -y libwww-perl libcrypt-ssleay-perl
+
+# PagerDuty scripts
+ADD https://raw.github.com/PagerDuty/pagerduty-nagios-pl/master/pagerduty_nagios.pl /usr/local/bin/pagerduty_nagios.pl
+RUN chmod 755 /usr/local/bin/pagerduty_nagios.pl
+ADD pd-flush.cron /etc/cron.d/pd-flush.cron
+RUN chmod 0644 /etc/cron.d/pd-flush.cron
+RUN echo "#!/bin/sh" > /usr/sbin/policy-rc.d && echo "exit 0" >> /usr/sbin/policy-rc.d
+RUN apt-get install -y cron
 
 RUN sed -i.bak 's/.*\=www\-data//g' /etc/apache2/envvars
 RUN export DOC_ROOT="DocumentRoot $(echo $NAGIOS_HOME/share)"; sed -i "s,DocumentRoot.*,$DOC_ROOT," /etc/apache2/sites-enabled/000-default
@@ -55,4 +66,4 @@ VOLUME /opt/nagios/libexec
 VOLUME /var/log/apache2
 VOLUME /usr/share/snmp/mibs
 
-CMD ["/usr/local/bin/start_nagios"]
+CMD cron && /usr/local/bin/start_nagios
