@@ -31,6 +31,9 @@ RUN chmod 0644 /etc/cron.d/pd-flush.cron
 RUN echo "#!/bin/sh" > /usr/sbin/policy-rc.d && echo "exit 0" >> /usr/sbin/policy-rc.d
 RUN apt-get install -y cron
 
+RUN apt-get install -y python-pip
+RUN pip install -U boto
+
 RUN sed -i.bak 's/.*\=www\-data//g' /etc/apache2/envvars
 RUN export DOC_ROOT="DocumentRoot $(echo $NAGIOS_HOME/share)"; sed -i "s,DocumentRoot.*,$DOC_ROOT," /etc/apache2/sites-enabled/000-default
 
